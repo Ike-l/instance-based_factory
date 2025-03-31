@@ -5,11 +5,6 @@ use crate::{Factory, GenerationError, InstanceFactory};
 use super::{factory::{ConcreteFactory, Type, TypeData}, InstanceId, PrivateInstanceKey, PublicInstanceKey};
 
 #[allow(dead_code)]
-struct ConcreteTemplate {
-    target_id: InstanceId,
-}
-
-#[allow(dead_code)]
 struct ConcreteInstanceFactory<ConcreteFactory: Factory> {
     factory: ConcreteFactory,
     instanciation_lookup: HashMap<InstanceId, (PrivateInstanceKey, PublicInstanceKey)>
