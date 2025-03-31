@@ -1,5 +1,12 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 
+pub enum GenerationError {
+    InstanceFactoryNotRegistered,
+    FactoryNotRegistered,
+    NoneData,
+    KeyMisMatch
+}
+
 pub trait Factory {
     type PrivateInstanceKey: Hash;
     type PublicInstanceKey: PartialEq + From<u64>;
@@ -7,17 +14,37 @@ pub trait Factory {
 
     type Type;
 
-    fn generate(&self, secret_key: &Self::PrivateInstanceKey, instance_key: &Self::PublicInstanceKey) -> Option<Self::Type>;
-    fn confirm(&self, secret_key: &Self::PrivateInstanceKey, id: &Self::PublicInstanceKey) -> Option<&Self::InstanceId>;
+    fn generate_from_ref(
+        &self, 
+        secret_key: &Self::PrivateInstanceKey, 
+        instance_key: &Self::PublicInstanceKey
+    ) -> Result<Self::Type, GenerationError>;
 
-    fn gen_id(key: &Self::PrivateInstanceKey) -> Self::PublicInstanceKey{
-        let mut hasher = DefaultHasher::new();
-        key.hash(&mut hasher);
-        hasher.finish().into()
+    fn generate_from_mut(
+        &mut self, 
+        secret_key: &Self::PrivateInstanceKey, 
+        instance_key: &Self::PublicInstanceKey
+    ) -> Result<Self::Type, GenerationError>;
+
+    fn confirm(
+        &self, 
+        secret_key: &Self::PrivateInstanceKey, 
+        instance_key: &Self::PublicInstanceKey
+    ) -> Option<&Self::InstanceId>;
+
+    fn confirm_key(
+        secret_key: &Self::PrivateInstanceKey, 
+        instance_key: &Self::PublicInstanceKey
+    ) -> bool {
+        Self::gen_id(secret_key) == *instance_key
     }
 
-    fn confirm_key(secret_key: &Self::PrivateInstanceKey, instance_key: &Self::PublicInstanceKey) -> bool {
-        Self::gen_id(secret_key) == *instance_key
+    fn gen_id(
+        secret_key: &Self::PrivateInstanceKey
+    ) -> Self::PublicInstanceKey{
+        let mut hasher = DefaultHasher::new();
+        secret_key.hash(&mut hasher);
+        hasher.finish().into()
     }
 }
 
@@ -32,15 +59,15 @@ pub trait InstanceFactory {
         target_instance_key: <Self::TargetFactory as Factory>::PublicInstanceKey
     );
 
-    fn instanciate_template(
+    fn instanciate_template_from_ref(
         &self, 
         template: Self::Template
-    ) -> Result<<Self::TargetFactory as Factory>::Type, InstanciationError>;
-}
+    ) -> Result<<Self::TargetFactory as Factory>::Type, GenerationError>;
 
-pub enum InstanciationError {
-    RegistrationError,
-    GenerationError,
+    fn instanciate_template_from_mut(
+        &mut self, 
+        template: Self::Template
+    ) -> Result<<Self::TargetFactory as Factory>::Type, GenerationError>;
 }
 
 // Notes
