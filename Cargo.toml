@@ -1,5 +1,5 @@
 [package]
-name = "instance-based_factory"
+name = "restricted_instance_based_bi-factory"
 version = "0.1.0"
 edition = "2024"
 
