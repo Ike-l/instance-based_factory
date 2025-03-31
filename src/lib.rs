@@ -5,7 +5,6 @@ pub enum GenerationError {
     KeyMisMatch,
     NoClone,
 }
-// i need to restrict 
 
 pub trait Factory {
     type PrivateInstanceKey;
