@@ -4,7 +4,7 @@ use rand::{rngs::ThreadRng, Rng};
 
 use crate::{Factory, GenerationError};
 
-use super::{InstanceId, InstanceKey, SecretInstanceKey};
+use super::{InstanceId, PrivateInstanceKey, PublicInstanceKey};
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -16,7 +16,7 @@ enum Kind {
 #[allow(dead_code)]
 pub struct Type {
     display_name: InstanceId,
-    key: InstanceKey,
+    key: PublicInstanceKey,
     data: TypeData
 }
 
@@ -27,36 +27,47 @@ pub struct TypeData (Kind, bool);
 #[allow(dead_code)]
 pub struct ConcreteFactory<Data> {
     rng: ThreadRng, 
-    generation_map: HashMap<InstanceKey, Option<Data>>,
-    id_map: HashMap<InstanceId, InstanceKey>
+    generation_map: HashMap<PublicInstanceKey, Option<Data>>,
+    id_map: HashMap<InstanceId, PublicInstanceKey>
 }
 
 impl ConcreteFactory<TypeData> {
-    fn get_id(&self, key: &InstanceKey) -> Option<&InstanceId> {
+    fn get_id(
+        &self, 
+        public_instance_key: &PublicInstanceKey
+    ) -> Option<&InstanceId> {
         return self.id_map
             .iter()
             .find_map(|(instance_id, instance_key)| {
-                (instance_key == key).then(|| instance_id)
+                (instance_key == public_instance_key).then(|| instance_id)
             });
     }
 
     #[allow(dead_code)]
-    pub fn register(&mut self, instance_id: InstanceId) -> Option<SecretInstanceKey> {
+    pub fn register(
+        &mut self, 
+        instance_id: InstanceId
+    ) -> Option<PrivateInstanceKey> {
         if self.id_map.contains_key(instance_id) {
             return None
         }
 
-        let key = self.rng.random::<u64>();
-        let secret_key = Self::gen_id(&key);
+        let private_key = self.rng.random::<u64>().into();
+        let public_key = Self::gen_id(&private_key);
 
-        self.generation_map.insert(key, None);
-        self.id_map.insert(instance_id, key);
+        self.generation_map.insert(public_key, None);
+        self.id_map.insert(instance_id, public_key);
 
-        Some(secret_key)
+        Some(private_key)
     }
 
     #[allow(dead_code)]
-    pub fn write_data(&mut self, secret_key: &SecretInstanceKey, instance_key: &InstanceKey, data: TypeData) {
+    pub fn write_data(
+        &mut self, 
+        secret_key: &PrivateInstanceKey, 
+        instance_key: &PublicInstanceKey, 
+        data: TypeData
+    ) {
         if Self::confirm_key(secret_key, instance_key) {
             self.generation_map.insert(*instance_key, Some(data));
         }
@@ -65,34 +76,38 @@ impl ConcreteFactory<TypeData> {
 
 impl Factory for ConcreteFactory<TypeData> {
     type InstanceId = InstanceId;
-    type PrivateInstanceKey = SecretInstanceKey;
-    type PublicInstanceKey = InstanceKey;
+    type PrivateInstanceKey = PrivateInstanceKey;
+    type PublicInstanceKey = PublicInstanceKey;
 
     type Type = Type;
 
-    fn confirm(&self, secret_key: &SecretInstanceKey, key: &InstanceKey) -> Option<&InstanceId> {
-        if Self::confirm_key(secret_key, key) {
-            return self.get_id(key)
+    fn confirm(
+        &self, 
+        private_instance_key: &Self::PrivateInstanceKey, 
+        public_instance_key: &Self::PublicInstanceKey
+    ) -> Option<&InstanceId> {
+        if Self::confirm_key(private_instance_key, public_instance_key) {
+            return self.get_id(public_instance_key)
         }
         None
     }
     
     fn generate_from_ref(
         &self, 
-        secret_key: &SecretInstanceKey, 
-        instance_key: &InstanceKey
+        private_instance_key: &Self::PrivateInstanceKey, 
+        public_instance_key: &Self::PublicInstanceKey
     ) -> Result<Self::Type, GenerationError> {
         let data = self.generation_map
-            .get(instance_key)
+            .get(public_instance_key)
             .ok_or(GenerationError::FactoryNotRegistered)?;
 
-        let id = self.get_id(instance_key).ok_or(GenerationError::FactoryNotRegistered)?;
+        let id = self.get_id(public_instance_key).ok_or(GenerationError::FactoryNotRegistered)?;
 
-        if Self::confirm_key(secret_key, instance_key) {
+        if Self::confirm_key(private_instance_key, public_instance_key) {
             return Ok(
                 Type { 
                     display_name: id, 
-                    key: *instance_key, 
+                    key: *public_instance_key, 
                     data: data.clone().ok_or(GenerationError::NoneData)?
                 }
             );
@@ -102,32 +117,23 @@ impl Factory for ConcreteFactory<TypeData> {
     }
 
     fn generate_from_mut(
-            &mut self, 
-            secret_key: &Self::PrivateInstanceKey, 
-            instance_key: &Self::PublicInstanceKey
-        ) -> Result<Self::Type, GenerationError> {
+        &mut self, 
+        private_instance_key: &Self::PrivateInstanceKey, 
+        public_instance_key: &Self::PublicInstanceKey
+    ) -> Result<Self::Type, GenerationError> {
         let data = self.generation_map
-            .get_mut(instance_key)
+            .get_mut(public_instance_key)
             .ok_or(GenerationError::FactoryNotRegistered)?
             .take()
             .ok_or(GenerationError::NoneData)?;
 
-        let id = self.id_map
-            .iter()
-            .find_map(
-                |(id, key)| 
-                    if key == instance_key {
-                        Some(id) 
-                    } else { 
-                        None 
-                    }
-            ).ok_or(GenerationError::FactoryNotRegistered)?;
+        let id = self.get_id(public_instance_key).ok_or(GenerationError::FactoryNotRegistered)?;
 
-        if Self::confirm_key(secret_key, instance_key) {
+        if Self::confirm_key(private_instance_key, public_instance_key) {
             return Ok(
                 Type { 
                     display_name: id, 
-                    key: *instance_key, 
+                    key: *public_instance_key, 
                     data
                 }
             );
@@ -137,10 +143,10 @@ impl Factory for ConcreteFactory<TypeData> {
     }
 
     fn gen_id(
-        secret_key: &Self::PrivateInstanceKey
+        private_instance_key: &Self::PrivateInstanceKey
     ) -> Self::PublicInstanceKey{
         let mut hasher = DefaultHasher::new();
-        secret_key.hash(&mut hasher);
+        private_instance_key.hash(&mut hasher);
         hasher.finish().into()
     }
 }

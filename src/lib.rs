@@ -15,31 +15,31 @@ pub trait Factory {
 
     fn generate_from_ref(
         &self, 
-        secret_key: &Self::PrivateInstanceKey, 
-        instance_key: &Self::PublicInstanceKey
+        private_instance_key: &Self::PrivateInstanceKey, 
+        public_instance_key: &Self::PublicInstanceKey
     ) -> Result<Self::Type, GenerationError>;
 
     fn generate_from_mut(
         &mut self, 
-        secret_key: &Self::PrivateInstanceKey, 
-        instance_key: &Self::PublicInstanceKey
+        private_instance_key: &Self::PrivateInstanceKey, 
+        public_instance_key: &Self::PublicInstanceKey
     ) -> Result<Self::Type, GenerationError>;
 
     fn confirm(
         &self, 
-        secret_key: &Self::PrivateInstanceKey, 
-        instance_key: &Self::PublicInstanceKey
+        private_instance_key: &Self::PrivateInstanceKey, 
+        public_instance_key: &Self::PublicInstanceKey
     ) -> Option<&Self::InstanceId>;
 
     fn confirm_key(
-        secret_key: &Self::PrivateInstanceKey, 
-        instance_key: &Self::PublicInstanceKey
+        private_instance_key: &Self::PrivateInstanceKey, 
+        public_instance_key: &Self::PublicInstanceKey
     ) -> bool {
-        Self::gen_id(secret_key) == *instance_key
+        Self::gen_id(private_instance_key) == *public_instance_key
     }
 
     fn gen_id(
-        secret_key: &Self::PrivateInstanceKey
+        private_key: &Self::PrivateInstanceKey
     ) -> Self::PublicInstanceKey;
 
 }
@@ -51,8 +51,8 @@ pub trait InstanceFactory {
     fn register(
         &mut self, 
         factory: &Self::TargetFactory, 
-        target_secret_key: <Self::TargetFactory as Factory>::PrivateInstanceKey, 
-        target_instance_key: <Self::TargetFactory as Factory>::PublicInstanceKey
+        target_private_instance_key: <Self::TargetFactory as Factory>::PrivateInstanceKey, 
+        target_public_instance_key: <Self::TargetFactory as Factory>::PublicInstanceKey
     );
 
     fn instanciate_template_from_ref(
@@ -70,6 +70,5 @@ pub trait InstanceFactory {
 // There should not be a public method on Type to bypass this *without* a way to confirm it happened
 // There should not be any way to get any SecretKey (if stored in either factory (like debug))
 // This design pattern hinges on the fact that types cannot be instantiated without 1. a public method and 2. being in or under the type in the module hierarchy
-// The only way to get a public key is via the gen_id fn.
 
 mod use_case;
