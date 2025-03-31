@@ -4,7 +4,8 @@ pub enum GenerationError {
     InstanceFactoryNotRegistered,
     FactoryNotRegistered,
     NoneData,
-    KeyMisMatch
+    KeyMisMatch,
+    NoClone,
 }
 
 pub trait Factory {
