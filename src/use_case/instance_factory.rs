@@ -16,23 +16,22 @@ struct ConcreteInstanceFactory<ConcreteFactory: Factory> {
 }
 
 impl InstanceFactory for ConcreteInstanceFactory<ConcreteFactory<TypeData>> {
-    type Template = ConcreteTemplate;
     type TargetFactory = ConcreteFactory<TypeData>;
 
     fn instanciate_template_from_ref(
         &self,
-        template: Self::Template
+        target_id: InstanceId,
     ) -> Result<Type, GenerationError> {
-        let (key, target_key) = self.instanciation_lookup.get(template.target_id).ok_or(GenerationError::InstanceFactoryNotRegistered)?;
+        let (key, target_key) = self.instanciation_lookup.get(target_id).ok_or(GenerationError::InstanceFactoryNotRegistered)?;
         
         self.factory.generate_from_ref(key, target_key)
     }
 
     fn instanciate_template_from_mut(
             &mut self, 
-            template: Self::Template
+            target_id: InstanceId,
         ) -> Result<<Self::TargetFactory as Factory>::Type, GenerationError> {
-        let (key, target_key) = self.instanciation_lookup.get(template.target_id).ok_or(GenerationError::InstanceFactoryNotRegistered)?;
+        let (key, target_key) = self.instanciation_lookup.get(target_id).ok_or(GenerationError::InstanceFactoryNotRegistered)?;
         
         self.factory.generate_from_mut(key, target_key)
             .or_else(|_| self.factory.generate_from_ref(key, target_key))

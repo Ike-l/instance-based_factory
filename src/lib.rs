@@ -5,6 +5,7 @@ pub enum GenerationError {
     KeyMisMatch,
     NoClone,
 }
+// i need to restrict 
 
 pub trait Factory {
     type PrivateInstanceKey;
@@ -45,7 +46,6 @@ pub trait Factory {
 }
 
 pub trait InstanceFactory {
-    type Template;
     type TargetFactory: Factory;
 
     fn register(
@@ -57,18 +57,20 @@ pub trait InstanceFactory {
 
     fn instanciate_template_from_ref(
         &self, 
-        template: Self::Template
+        target_id: <Self::TargetFactory as Factory>::InstanceId,
     ) -> Result<<Self::TargetFactory as Factory>::Type, GenerationError>;
 
     fn instanciate_template_from_mut(
         &mut self, 
-        template: Self::Template
+        target_id: <Self::TargetFactory as Factory>::InstanceId,
     ) -> Result<<Self::TargetFactory as Factory>::Type, GenerationError>;
 }
 
 // Notes
 // There should not be a public method on Type to bypass this *without* a way to confirm it happened
 // There should not be any way to get any SecretKey (if stored in either factory (like debug))
-// This design pattern hinges on the fact that types cannot be instantiated without 1. a public method and 2. being in or under the type in the module hierarchy
+// This design pattern hinges on the fact private fields are only accessible in or under the decleration module
+
+// Is there a way with this method to allow specific others? (restrict who knows the private key beyond either no one else or everyone else). This would be like an actual trade
 
 mod use_case;
