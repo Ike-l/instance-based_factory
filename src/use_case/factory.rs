@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::{DefaultHasher, Hash, Hasher}};
 
 use rand::{rngs::ThreadRng, Rng};
 
@@ -134,5 +134,13 @@ impl Factory for ConcreteFactory<TypeData> {
         }
 
         Err(GenerationError::KeyMisMatch)
+    }
+
+    fn gen_id(
+        secret_key: &Self::PrivateInstanceKey
+    ) -> Self::PublicInstanceKey{
+        let mut hasher = DefaultHasher::new();
+        secret_key.hash(&mut hasher);
+        hasher.finish().into()
     }
 }

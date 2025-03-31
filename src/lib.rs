@@ -1,5 +1,3 @@
-use std::hash::{DefaultHasher, Hash, Hasher};
-
 pub enum GenerationError {
     InstanceFactoryNotRegistered,
     FactoryNotRegistered,
@@ -9,7 +7,7 @@ pub enum GenerationError {
 }
 
 pub trait Factory {
-    type PrivateInstanceKey: Hash;
+    type PrivateInstanceKey;
     type PublicInstanceKey: PartialEq + From<u64>;
     type InstanceId;
 
@@ -42,11 +40,8 @@ pub trait Factory {
 
     fn gen_id(
         secret_key: &Self::PrivateInstanceKey
-    ) -> Self::PublicInstanceKey{
-        let mut hasher = DefaultHasher::new();
-        secret_key.hash(&mut hasher);
-        hasher.finish().into()
-    }
+    ) -> Self::PublicInstanceKey;
+
 }
 
 pub trait InstanceFactory {
@@ -75,5 +70,6 @@ pub trait InstanceFactory {
 // There should not be a public method on Type to bypass this *without* a way to confirm it happened
 // There should not be any way to get any SecretKey (if stored in either factory (like debug))
 // This design pattern hinges on the fact that types cannot be instantiated without 1. a public method and 2. being in or under the type in the module hierarchy
+// The only way to get a public key is via the gen_id fn.
 
 mod use_case;
