@@ -8,7 +8,7 @@ pub enum GenerationError {
 
 pub trait Factory {
     type PrivateInstanceKey;
-    type PublicInstanceKey: PartialEq + From<u64>;
+    type PublicInstanceKey: PartialEq;
     type InstanceId;
 
     type Type;
