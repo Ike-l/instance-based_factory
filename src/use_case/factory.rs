@@ -94,7 +94,7 @@ impl Factory for ConcreteFactory<TypeData> {
     
     fn generate_from_ref(
         &self, 
-        private_instance_key: &Self::PrivateInstanceKey, 
+        private_instance_key: Option<&Self::PrivateInstanceKey>, 
         public_instance_key: &Self::PublicInstanceKey
     ) -> Result<Self::Type, GenerationError> {
         let data = self.generation_map
@@ -102,23 +102,31 @@ impl Factory for ConcreteFactory<TypeData> {
             .ok_or(GenerationError::FactoryNotRegistered)?;
 
         let id = self.get_id(public_instance_key).ok_or(GenerationError::FactoryNotRegistered)?;
-
-        if Self::confirm_key(private_instance_key, public_instance_key) {
-            return Ok(
-                Type { 
-                    display_name: id, 
-                    key: *public_instance_key, 
-                    data: data.clone().ok_or(GenerationError::NoneData)?
-                }
-            );
+        if let Some(private_instance_key) = private_instance_key {
+            if Self::confirm_key(private_instance_key, public_instance_key) {
+                Ok(
+                    Type { 
+                        display_name: id, 
+                        key: *public_instance_key, 
+                        data: data.clone().ok_or(GenerationError::NoneData)?
+                    }
+                )
+            } else {
+                Err(GenerationError::KeyMisMatch)
+            }
+        } else {
+            Ok(Type {
+                display_name: id,
+                key: *public_instance_key,
+                data: data.clone().ok_or(GenerationError::NoneData)? // MODIFY SYNTHETIC BOOL OR SMTH
+            })
         }
 
-        Err(GenerationError::KeyMisMatch)
     }
 
     fn generate_from_mut(
         &mut self, 
-        private_instance_key: &Self::PrivateInstanceKey, 
+        private_instance_key: Option<&Self::PrivateInstanceKey>, 
         public_instance_key: &Self::PublicInstanceKey
     ) -> Result<Self::Type, GenerationError> {
         let data = self.generation_map
@@ -129,17 +137,25 @@ impl Factory for ConcreteFactory<TypeData> {
 
         let id = self.get_id(public_instance_key).ok_or(GenerationError::FactoryNotRegistered)?;
 
-        if Self::confirm_key(private_instance_key, public_instance_key) {
-            return Ok(
-                Type { 
-                    display_name: id, 
-                    key: *public_instance_key, 
-                    data
-                }
-            );
+        if let Some(private_instance_key) = private_instance_key {
+            if Self::confirm_key(private_instance_key, public_instance_key) {
+                Ok(
+                    Type { 
+                        display_name: id, 
+                        key: *public_instance_key, 
+                        data
+                    }
+                )
+            } else {
+                Err(GenerationError::KeyMisMatch)
+            }
+        } else {
+            Ok(Type {
+                display_name: id,
+                key: *public_instance_key,
+                data // MODIFY SYNTHETIC BOOL OR SMTH
+            })
         }
-
-        Err(GenerationError::KeyMisMatch)
     }
 
     fn gen_id(

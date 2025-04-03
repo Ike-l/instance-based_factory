@@ -15,13 +15,13 @@ pub trait Factory {
 
     fn generate_from_ref(
         &self, 
-        private_instance_key: &Self::PrivateInstanceKey, 
+        private_instance_key: Option<&Self::PrivateInstanceKey>, 
         public_instance_key: &Self::PublicInstanceKey
     ) -> Result<Self::Type, GenerationError>;
 
     fn generate_from_mut(
         &mut self, 
-        private_instance_key: &Self::PrivateInstanceKey, 
+        private_instance_key: Option<&Self::PrivateInstanceKey>, 
         public_instance_key: &Self::PublicInstanceKey
     ) -> Result<Self::Type, GenerationError>;
 

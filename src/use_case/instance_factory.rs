@@ -19,7 +19,7 @@ impl InstanceFactory for ConcreteInstanceFactory<ConcreteFactory<TypeData>> {
     ) -> Result<Type, GenerationError> {
         let (key, target_key) = self.instanciation_lookup.get(target_id).ok_or(GenerationError::InstanceFactoryNotRegistered)?;
         
-        self.factory.generate_from_ref(key, target_key)
+        self.factory.generate_from_ref(Some(key), target_key)
     }
 
     fn instanciate_template_from_mut(
@@ -28,8 +28,8 @@ impl InstanceFactory for ConcreteInstanceFactory<ConcreteFactory<TypeData>> {
         ) -> Result<<Self::TargetFactory as Factory>::Type, GenerationError> {
         let (key, target_key) = self.instanciation_lookup.get(target_id).ok_or(GenerationError::InstanceFactoryNotRegistered)?;
         
-        self.factory.generate_from_mut(key, target_key)
-            .or_else(|_| self.factory.generate_from_ref(key, target_key))
+        self.factory.generate_from_mut(Some(key), target_key)
+            .or_else(|_| self.factory.generate_from_ref(Some(key), target_key))
     }
 
     fn register(
