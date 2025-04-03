@@ -39,6 +39,8 @@ impl InstanceFactory for ConcreteInstanceFactory<ConcreteFactory<TypeData>> {
         target_public_instance_key: <Self::TargetFactory as Factory>::PublicInstanceKey
     ) {
         if let Some(id) = factory.confirm(&target_private_instance_key, &target_public_instance_key) {
+            // Need a way to merge a factory with another (self) i.e to get the record associated with the target
+            // self.factory.id_map.insert(id.to_string(), target_public_instance_key);
             self.instanciation_lookup.insert(id, (target_private_instance_key, target_public_instance_key));
         }
     }
